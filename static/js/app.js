@@ -7,14 +7,28 @@ const API_BASE = '/api';
 
 let currentPage = 'dashboard';
 let products = [];
-let currentProductId = null;
-let isEditing = false;
 
 // Wizard State
 let wizardStep = 1;
 let wizardProduct = null;
 let wizardVariations = [];
 let activePreviewMarketplace = 'all';
+
+// Step 3 Variation Tab State
+let wizardStep3ActiveTab = 'base';
+let wizardStep3Data = {
+  base: {
+    amazon_title: '',
+    amazon_bullets: '',
+    amazon_desc: '',
+    flipkart_title: '',
+    flipkart_features: '',
+    flipkart_desc: '',
+    meesho_title: '',
+    meesho_desc: ''
+  },
+  variations: {}
+};
 
 
 // =============================================================
@@ -298,14 +312,20 @@ async function renderProducts() {
       <select class="filter-select" id="filter-category" onchange="filterProducts()">
         <option value="">All Categories</option>
         <option value="baseball_caps">Baseball Caps</option>
-        <option value="home_kitchen">Home & Kitchen</option>
+        <option value="home_kitchen_general">Home & Kitchen</option>
+        <option value="kitchen_storage">Kitchen Storage</option>
+        <option value="kitchen_tools">Kitchen Tools</option>
+        <option value="home_decor">Home Decor</option>
+        <option value="cleaning_supplies">Cleaning Supplies</option>
       </select>
       <select class="filter-select" id="filter-status" onchange="filterProducts()">
         <option value="">All Statuses</option>
-        <option value="draft">Draft</option>
-        <option value="ready">Ready</option>
+        <option value="new">New</option>
+        <option value="keywords_done">Keywords Done</option>
+        <option value="content_ready">Content Ready</option>
+        <option value="priced">Priced</option>
+        <option value="exported">Exported</option>
         <option value="listed">Listed</option>
-        <option value="error">Error</option>
       </select>
     </div>
 
@@ -316,7 +336,7 @@ async function renderProducts() {
           <span class="empty-icon">🏷️</span>
           <h3>No products found</h3>
           <p>Add your first product to get started with creating marketplace listings.</p>
-          <button class="btn btn-primary btn-pulse" onclick="showAddProductModal()">
+          <button class="btn btn-primary btn-pulse" onclick="openProductWizard()">
             <span class="btn-icon">+</span> Add Product
           </button>
         </div>
@@ -344,15 +364,16 @@ function filterProducts() {
   }
 
   if (catFilter) {
-    filtered = filtered.filter(p => p.category === catFilter);
+    filtered = filtered.filter(p => {
+      if (catFilter === 'home_kitchen_general') {
+        return p.category === 'home_kitchen_general' || p.category === 'home_kitchen';
+      }
+      return p.category === catFilter;
+    });
   }
 
   if (statusFilter) {
-    filtered = filtered.filter(p =>
-      p.amazon_status === statusFilter ||
-      p.flipkart_status === statusFilter ||
-      p.meesho_status === statusFilter
-    );
+    filtered = filtered.filter(p => (p.listing_status || 'new') === statusFilter);
   }
 
   const wrapper = document.getElementById('products-table-wrapper');
@@ -410,7 +431,7 @@ function renderProductsTable(productList, compact) {
         <td>
           <div class="row-actions">
             <button title="Wizard" onclick="openProductWizard(${p.id})">🧙‍♂️</button>
-            <button title="Edit" onclick="showEditProductModal(${p.id})">✏️</button>
+            <button title="Edit" onclick="openProductWizard(${p.id})">✏️</button>
             <button title="Delete" class="action-delete" onclick="confirmDeleteProduct(${p.id}, '${escapeHtml(p.name || p.sku || '')}')">🗑️</button>
           </div>
         </td>
@@ -587,99 +608,6 @@ async function testGeminiApiKey() {
 }
 
 
-// =============================================================
-// Product CRUD
-// =============================================================
-
-/** Show the Add Product modal (reset form). */
-function showAddProductModal() {
-  isEditing = false;
-  currentProductId = null;
-  document.getElementById('modal-title').textContent = 'Add New Product';
-  document.getElementById('modal-save-label').textContent = 'Save Product';
-  resetProductForm();
-  openModal('product-modal');
-}
-
-/**
- * Show Edit Product modal, pre-fill form with product data.
- * @param {number} productId - Product ID to edit
- */
-async function showEditProductModal(productId) {
-  isEditing = true;
-  currentProductId = productId;
-  document.getElementById('modal-title').textContent = 'Edit Product';
-  document.getElementById('modal-save-label').textContent = 'Update Product';
-  resetProductForm();
-
-  try {
-    const res = await api(`/products/${productId}`);
-    const product = res.data?.product || res.product || res;
-    // Populate form fields
-    setValue('f-sku', product.sku);
-    setValue('f-name', product.name);
-    setValue('f-brand', product.brand);
-    setValue('f-category', product.category);
-    setValue('f-subcategory', product.subcategory);
-    setValue('f-cost', product.cost_price);
-    setValue('f-weight', product.weight_grams);
-    setValue('f-length', product.length_cm);
-    setValue('f-width', product.width_cm);
-    setValue('f-height', product.height_cm);
-    setValue('f-hsn', product.hsn_code);
-    setValue('f-gst', product.gst_rate);
-    setValue('f-notes', product.notes);
-    openModal('product-modal');
-  } catch (err) {
-    showToast('Failed to load product: ' + err.message, 'error');
-  }
-}
-
-/**
- * Save product — create or update depending on isEditing.
- */
-async function saveProduct() {
-  // Validate required fields
-  if (!validateProductForm()) return;
-
-  const body = {
-    sku: getVal('f-sku'),
-    name: getVal('f-name'),
-    brand: getVal('f-brand') || null,
-    category: getVal('f-category'),
-    subcategory: getVal('f-subcategory') || null,
-    cost_price: parseFloat(getVal('f-cost')) || 0,
-    weight_grams: parseInt(getVal('f-weight'), 10) || null,
-    length_cm: parseFloat(getVal('f-length')) || null,
-    width_cm: parseFloat(getVal('f-width')) || null,
-    height_cm: parseFloat(getVal('f-height')) || null,
-    hsn_code: getVal('f-hsn') || null,
-    gst_rate: parseFloat(getVal('f-gst')) || 18,
-    notes: getVal('f-notes') || null,
-  };
-
-  try {
-    if (isEditing && currentProductId) {
-      await api(`/products/${currentProductId}`, 'PUT', body);
-      showToast('Product updated successfully', 'success');
-    } else {
-      await api('/products', 'POST', body);
-      showToast('Product created successfully', 'success');
-    }
-    closeModal();
-    // Refresh current page
-    if (currentPage === 'products') renderProducts();
-    else if (currentPage === 'dashboard') renderDashboard();
-  } catch (err) {
-    showToast('Failed to save: ' + err.message, 'error');
-  }
-}
-
-/**
- * Show the delete confirmation modal.
- * @param {number} productId - Product ID
- * @param {string} productName - Product name for display
- */
 function confirmDeleteProduct(productId, productName) {
   document.getElementById('delete-product-name').textContent = productName || `Product #${productId}`;
   document.getElementById('btn-confirm-delete').onclick = () => deleteProduct(productId);
@@ -707,73 +635,6 @@ async function deleteProduct(productId) {
 // Form Helpers
 // =============================================================
 
-function getVal(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : '';
-}
-
-function setValue(id, val) {
-  const el = document.getElementById(id);
-  if (el && val != null) el.value = val;
-}
-
-function resetProductForm() {
-  const form = document.getElementById('product-form');
-  if (form) form.reset();
-  // Reset GST default
-  setValue('f-gst', 18);
-  // Clear all inline errors
-  document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
-  document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-}
-
-/**
- * Validate the product form. Returns true if valid.
- * @returns {boolean}
- */
-function validateProductForm() {
-  let valid = true;
-
-  // Clear previous errors
-  document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
-  document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-
-  // SKU
-  if (!getVal('f-sku')) {
-    setFieldError('f-sku', 'err-sku', 'SKU is required');
-    valid = false;
-  }
-  // Name
-  if (!getVal('f-name')) {
-    setFieldError('f-name', 'err-name', 'Product name is required');
-    valid = false;
-  }
-  // Category
-  if (!getVal('f-category')) {
-    setFieldError('f-category', 'err-category', 'Please select a category');
-    valid = false;
-  }
-  // Cost
-  if (!getVal('f-cost') || parseFloat(getVal('f-cost')) < 0) {
-    setFieldError('f-cost', 'err-cost', 'Valid cost price is required');
-    valid = false;
-  }
-
-  return valid;
-}
-
-function setFieldError(inputId, errorId, message) {
-  const input = document.getElementById(inputId);
-  const errorEl = document.getElementById(errorId);
-  if (input) input.classList.add('input-error');
-  if (errorEl) errorEl.textContent = message;
-}
-
-
-// =============================================================
-// Modal Helpers
-// =============================================================
-
 function openModal(modalId) {
   const overlay = document.getElementById(modalId);
   if (overlay) {
@@ -782,13 +643,7 @@ function openModal(modalId) {
   }
 }
 
-function closeModal() {
-  const overlay = document.getElementById('product-modal');
-  if (overlay) {
-    overlay.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-}
+
 
 function closeDeleteModal() {
   const overlay = document.getElementById('delete-modal');
@@ -847,7 +702,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      closeModal();
       closeDeleteModal();
       closeMobileSidebar();
       closeWizard();
@@ -1418,6 +1272,10 @@ async function startWizardKeywordResearch() {
       progressPercent.textContent = '100%';
       progressStep.textContent = 'Complete!';
       progressStatus.textContent += `[Complete] ${data.message}\n`;
+      if (!data.results) {
+        console.warn('[keyword-research] complete event missing results payload — ignoring');
+        return;
+      }
       showToast("Keyword research complete!", "success");
       renderWizardKeywordResults(data.results);
     } else if (data.step === 'error') {
@@ -1459,8 +1317,16 @@ function renderWizardKeywordResults(results) {
   const pillsPrimary = document.getElementById('w-pills-primary');
   const pillsSecondary = document.getElementById('w-pills-secondary');
   const resultsContainer = document.getElementById('w-keyword-results');
-  
+
   if (!pillsPrimary || !pillsSecondary || !resultsContainer) return;
+
+  if (!results) {
+    console.warn('[renderWizardKeywordResults] called with null/undefined results');
+    pillsPrimary.innerHTML = '<span class="text-muted">No keyword data available.</span>';
+    pillsSecondary.innerHTML = '';
+    resultsContainer.style.display = 'grid';
+    return;
+  }
   
   pillsPrimary.innerHTML = (results.primary || []).map(kw => `
     <span class="kw-pill selected" onclick="toggleKwPill(this)" data-kw="${escapeHtml(kw)}">
@@ -1555,6 +1421,98 @@ function attachWizardStep3Counters() {
   refreshWizardStep3Counters();
 }
 
+/**
+ * Save manual edits currently in the DOM inputs to our in-memory state.
+ */
+function saveCurrentTabEditsToMemory() {
+  const current = {
+    amazon_title: document.getElementById('w-amazon-title')?.value || '',
+    amazon_bullets: document.getElementById('w-amazon-bullets')?.value || '',
+    amazon_desc: document.getElementById('w-amazon-desc')?.value || '',
+    flipkart_title: document.getElementById('w-flipkart-title')?.value || '',
+    flipkart_features: document.getElementById('w-flipkart-features')?.value || '',
+    flipkart_desc: document.getElementById('w-flipkart-desc')?.value || '',
+    meesho_title: document.getElementById('w-meesho-title')?.value || '',
+    meesho_desc: document.getElementById('w-meesho-desc')?.value || ''
+  };
+
+  if (wizardStep3ActiveTab === 'base') {
+    wizardStep3Data.base = current;
+  } else {
+    wizardStep3Data.variations[wizardStep3ActiveTab] = current;
+  }
+}
+
+/**
+ * Load the active tab's copy content from in-memory state into the DOM inputs.
+ */
+function loadActiveTabContentToDOM() {
+  let content;
+  if (wizardStep3ActiveTab === 'base') {
+    content = wizardStep3Data.base;
+  } else {
+    if (!wizardStep3Data.variations[wizardStep3ActiveTab]) {
+      wizardStep3Data.variations[wizardStep3ActiveTab] = {
+        amazon_title: '', amazon_bullets: '', amazon_desc: '',
+        flipkart_title: '', flipkart_features: '', flipkart_desc: '',
+        meesho_title: '', meesho_desc: ''
+      };
+    }
+    content = wizardStep3Data.variations[wizardStep3ActiveTab];
+  }
+
+  document.getElementById('w-amazon-title').value = content.amazon_title || '';
+  document.getElementById('w-amazon-bullets').value = content.amazon_bullets || '';
+  document.getElementById('w-amazon-desc').value = content.amazon_desc || '';
+
+  document.getElementById('w-flipkart-title').value = content.flipkart_title || '';
+  document.getElementById('w-flipkart-features').value = content.flipkart_features || '';
+  document.getElementById('w-flipkart-desc').value = content.flipkart_desc || '';
+
+  document.getElementById('w-meesho-title').value = content.meesho_title || '';
+  document.getElementById('w-meesho-desc').value = content.meesho_desc || '';
+
+  refreshWizardStep3Counters();
+}
+
+/**
+ * Render the variation tab strip in Step 3.
+ */
+function renderStep3VariationTabs() {
+  const container = document.getElementById('w-variation-tabs');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // 1. Create Base Product Tab
+  const baseTab = document.createElement('button');
+  baseTab.className = `wizard-var-tab${wizardStep3ActiveTab === 'base' ? ' active' : ''}`;
+  baseTab.textContent = 'Base Product';
+  baseTab.addEventListener('click', () => switchStep3Tab('base'));
+  container.appendChild(baseTab);
+
+  // 2. Create tab for each variation
+  wizardVariations.forEach(v => {
+    const tab = document.createElement('button');
+    tab.className = `wizard-var-tab${String(wizardStep3ActiveTab) === String(v.id) ? ' active' : ''}`;
+    tab.textContent = v.variation_value || v.sku || `Var #${v.id}`;
+    tab.addEventListener('click', () => switchStep3Tab(v.id));
+    container.appendChild(tab);
+  });
+}
+
+/**
+ * Switch active tab to a new variation ID or 'base'.
+ */
+function switchStep3Tab(tabId) {
+  if (String(wizardStep3ActiveTab) === String(tabId)) return;
+
+  saveCurrentTabEditsToMemory();
+  wizardStep3ActiveTab = tabId;
+  renderStep3VariationTabs();
+  loadActiveTabContentToDOM();
+}
+
 async function loadWizardStep3Content() {
   if (!wizardProduct) return;
 
@@ -1562,18 +1520,53 @@ async function loadWizardStep3Content() {
     const res = await api(`/products/${wizardProduct.id}`);
     const product = res.data?.product || res.product || res;
 
-    document.getElementById('w-amazon-title').value = product.amazon_title || '';
-    document.getElementById('w-amazon-bullets').value = (product.amazon_bullets || []).join('\n');
-    document.getElementById('w-amazon-desc').value = product.amazon_description || '';
+    wizardStep3Data.base = {
+      amazon_title: product.amazon_title || '',
+      amazon_bullets: (product.amazon_bullets || []).join('\n'),
+      amazon_desc: product.amazon_description || '',
+      flipkart_title: product.flipkart_title || '',
+      flipkart_features: (product.flipkart_key_features || []).join('\n'),
+      flipkart_desc: product.flipkart_description || '',
+      meesho_title: product.meesho_title || '',
+      meesho_desc: product.meesho_description || ''
+    };
 
-    document.getElementById('w-flipkart-title').value = product.flipkart_title || '';
-    document.getElementById('w-flipkart-features').value = (product.flipkart_key_features || []).join('\n');
-    document.getElementById('w-flipkart-desc').value = product.flipkart_description || '';
+    wizardStep3Data.variations = {};
+    if (wizardVariations.length > 0) {
+      try {
+        const vRes = await api(`/products/${wizardProduct.id}/variation-content`);
+        const list = vRes.data || vRes || [];
+        list.forEach(r => {
+          const vId = r.variation_id;
+          if (!wizardStep3Data.variations[vId]) {
+            wizardStep3Data.variations[vId] = {
+              amazon_title: '', amazon_bullets: '', amazon_desc: '',
+              flipkart_title: '', flipkart_features: '', flipkart_desc: '',
+              meesho_title: '', meesho_desc: ''
+            };
+          }
+          if (r.marketplace === 'amazon') {
+            wizardStep3Data.variations[vId].amazon_title = r.title || '';
+            wizardStep3Data.variations[vId].amazon_bullets = (r.bullets || []).join('\n');
+            wizardStep3Data.variations[vId].amazon_desc = r.description || '';
+          } else if (r.marketplace === 'flipkart') {
+            wizardStep3Data.variations[vId].flipkart_title = r.title || '';
+            wizardStep3Data.variations[vId].flipkart_features = (r.bullets || []).join('\n');
+            wizardStep3Data.variations[vId].flipkart_desc = r.description || '';
+          } else if (r.marketplace === 'meesho') {
+            wizardStep3Data.variations[vId].meesho_title = r.title || '';
+            wizardStep3Data.variations[vId].meesho_desc = r.description || '';
+          }
+        });
+      } catch (vErr) {
+        console.error("Failed to load variation contents:", vErr);
+      }
+    }
 
-    document.getElementById('w-meesho-title').value = product.meesho_title || '';
-    document.getElementById('w-meesho-desc').value = product.meesho_description || '';
+    wizardStep3ActiveTab = 'base';
+    renderStep3VariationTabs();
+    loadActiveTabContentToDOM();
 
-    refreshWizardStep3Counters();
   } catch (err) {
     showToast("Failed to load drafts: " + err.message, "error");
   }
@@ -1640,35 +1633,59 @@ async function startWizardContentGeneration() {
  */
 async function saveWizardStep3() {
   if (!wizardProduct) return true;
-  
-  const amazon_title = document.getElementById('w-amazon-title').value.trim();
-  const amazon_bullets = document.getElementById('w-amazon-bullets').value.split('\n').filter(b => b.trim() !== '');
-  const amazon_description = document.getElementById('w-amazon-desc').value.trim();
-  
-  const flipkart_title = document.getElementById('w-flipkart-title').value.trim();
-  const flipkart_key_features = document.getElementById('w-flipkart-features').value.split('\n').filter(f => f.trim() !== '');
-  const flipkart_description = document.getElementById('w-flipkart-desc').value.trim();
-  
-  const meesho_title = document.getElementById('w-meesho-title').value.trim();
-  const meesho_description = document.getElementById('w-meesho-desc').value.trim();
-  
+
+  // 1. Save edits from current active tab to memory
+  saveCurrentTabEditsToMemory();
+
+  // 2. Prepare and save base product copy content
+  const base = wizardStep3Data.base;
   const body = {
-    amazon_title,
-    amazon_bullets,
-    amazon_description,
-    amazon_status: amazon_title ? 'ready' : 'draft',
-    flipkart_title,
-    flipkart_key_features,
-    flipkart_description,
-    flipkart_status: flipkart_title ? 'ready' : 'draft',
-    meesho_title,
-    meesho_description,
-    meesho_status: meesho_title ? 'ready' : 'draft',
+    amazon_title: base.amazon_title,
+    amazon_bullets: base.amazon_bullets.split('\n').filter(b => b.trim() !== ''),
+    amazon_description: base.amazon_desc,
+    amazon_status: base.amazon_title ? 'ready' : 'draft',
+    flipkart_title: base.flipkart_title,
+    flipkart_key_features: base.flipkart_features.split('\n').filter(f => f.trim() !== ''),
+    flipkart_description: base.flipkart_desc,
+    flipkart_status: base.flipkart_title ? 'ready' : 'draft',
+    meesho_title: base.meesho_title,
+    meesho_description: base.meesho_desc,
+    meesho_status: base.meesho_title ? 'ready' : 'draft',
     listing_status: 'content_ready'
   };
-  
+
   try {
     await api(`/products/${wizardProduct.id}`, 'PUT', body);
+
+    // 3. Prepare and save variations copy content
+    const varPayload = {};
+    for (const varId in wizardStep3Data.variations) {
+      const vContent = wizardStep3Data.variations[varId];
+      varPayload[varId] = {
+        amazon: {
+          title: vContent.amazon_title || '',
+          bullets: vContent.amazon_bullets || '',
+          description: vContent.amazon_desc || '',
+          status: vContent.amazon_title ? 'ready' : 'draft'
+        },
+        flipkart: {
+          title: vContent.flipkart_title || '',
+          bullets: vContent.flipkart_features || '',
+          description: vContent.flipkart_desc || '',
+          status: vContent.flipkart_title ? 'ready' : 'draft'
+        },
+        meesho: {
+          title: vContent.meesho_title || '',
+          description: vContent.meesho_desc || '',
+          status: vContent.meesho_title ? 'ready' : 'draft'
+        }
+      };
+    }
+
+    if (Object.keys(varPayload).length > 0) {
+      await api(`/products/${wizardProduct.id}/variation-content`, 'PUT', varPayload);
+    }
+
     showToast("Listing drafts updated", "success");
     return true;
   } catch (err) {

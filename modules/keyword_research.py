@@ -343,6 +343,8 @@ def _scrape_fast_path_sync(
     seed: str,
     limit: int = 50,
     progress_updater: Optional[Callable[[dict[str, Any]], None]] = None,
+    min_delay: float = 2.0,
+    max_delay: float = 4.0,
 ) -> Optional[dict[str, list[str]]]:
     """Attempt scraping via requests + BeautifulSoup (Strategy 1).
 
@@ -417,7 +419,7 @@ def _scrape_fast_path_sync(
             })
 
         # Random delay between requests to mimic human browsing
-        time.sleep(random.uniform(settings.SCRAPER_MIN_DELAY, settings.SCRAPER_MAX_DELAY))
+        time.sleep(random.uniform(min_delay, max_delay))
 
         try:
             resp = session.get(link, headers=_get_random_headers(), timeout=15)
@@ -461,6 +463,8 @@ def _scrape_selenium_sync(
     limit: int = 50,
     progress_updater: Optional[Callable[[dict[str, Any]], None]] = None,
     headless: bool = True,
+    min_delay: float = 2.0,
+    max_delay: float = 4.0,
 ) -> dict[str, Any]:
     """Synchronous Selenium Chrome scraping – used as fallback when BS4 is blocked.
 
@@ -591,7 +595,7 @@ def _scrape_selenium_sync(
 
             try:
                 driver.get(link)
-                time.sleep(random.uniform(settings.SCRAPER_MIN_DELAY, settings.SCRAPER_MAX_DELAY))
+                time.sleep(random.uniform(min_delay, max_delay))
 
                 # Check for Robot Check CAPTCHA page
                 if "captcha" in driver.title.lower() or "robot" in driver.title.lower() or "page not found" in driver.title.lower():
@@ -786,9 +790,16 @@ async def scrape_keywords(
     })
 
     try:
+        # Resolve delay settings: DB overrides .env defaults
+        db_min = await get_setting("scraper_min_delay")
+        db_max = await get_setting("scraper_max_delay")
+        resolved_min_delay = float(db_min) if db_min is not None else settings.SCRAPER_MIN_DELAY
+        resolved_max_delay = float(db_max) if db_max is not None else settings.SCRAPER_MAX_DELAY
+
         # --- Strategy 1: Fast Path (requests + BS4) ---
         scraped_data = await asyncio.to_thread(
             _scrape_fast_path_sync, seed, limit, sync_progress_updater,
+            resolved_min_delay, resolved_max_delay,
         )
 
         # Flush queued progress events
@@ -814,6 +825,7 @@ async def scrape_keywords(
 
             scraped_data = await asyncio.to_thread(
                 _scrape_selenium_sync, seed, limit, sync_progress_updater, headless_pref,
+                resolved_min_delay, resolved_max_delay,
             )
 
             # Flush queued progress events
@@ -827,7 +839,7 @@ async def scrape_keywords(
             fallback = _run_local_fallback(seed)
             await save_keyword_research(seed, fallback, product_id=product_id)
             await _emit_progress({
-                "step": "complete",
+                "step": "fallback",
                 "current": 0,
                 "total": 0,
                 "message": "Using local fallback results (scraping was blocked).",
@@ -864,13 +876,6 @@ async def scrape_keywords(
         # --- Save to database ---
         await save_keyword_research(seed, results, product_id=product_id)
 
-        await _emit_progress({
-            "step": "complete",
-            "current": results["scraped_count"],
-            "total": results["total_links"],
-            "message": f"Keyword research complete! Scraped {results['scraped_count']} products.",
-        })
-
         return results
 
     except Exception as exc:
@@ -879,7 +884,7 @@ async def scrape_keywords(
         fallback = _run_local_fallback(seed)
         await save_keyword_research(seed, fallback, product_id=product_id)
         await _emit_progress({
-            "step": "complete",
+            "step": "fallback",
             "current": 0,
             "total": 0,
             "message": f"Research failed ({exc}). Using local fallback.",
