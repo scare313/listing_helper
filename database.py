@@ -285,8 +285,12 @@ async def get_all_products(
     params: list[Any] = []
 
     if category:
-        conditions.append("category = ?")
-        params.append(category)
+        if category == "home_kitchen_general":
+            conditions.append("(category = ? OR category = ?)")
+            params.extend(["home_kitchen_general", "home_kitchen"])
+        else:
+            conditions.append("category = ?")
+            params.append(category)
 
     if marketplace_status:
         parts = marketplace_status.split(":")

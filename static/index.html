@@ -84,105 +84,6 @@
     </main>
   </div>
 
-  <!-- ========== Add / Edit Product Modal ========== -->
-  <div class="modal-overlay" id="product-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modal-title">Add New Product</h3>
-        <button class="modal-close" onclick="closeModal()" aria-label="Close modal">&times;</button>
-      </div>
-
-      <div class="modal-body">
-        <form id="product-form" novalidate>
-          <!-- Section: Basic Info -->
-          <div class="form-section">
-            <h4 class="form-section-title">Basic Information</h4>
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="f-sku">SKU <span class="required">*</span></label>
-                <input type="text" id="f-sku" required placeholder="e.g., BC-BLK-001" autocomplete="off">
-                <span class="form-error" id="err-sku"></span>
-              </div>
-              <div class="form-group">
-                <label for="f-name">Product Name <span class="required">*</span></label>
-                <input type="text" id="f-name" required placeholder="e.g., Classic Baseball Cap" autocomplete="off">
-                <span class="form-error" id="err-name"></span>
-              </div>
-              <div class="form-group">
-                <label for="f-brand">Brand</label>
-                <input type="text" id="f-brand" placeholder="Your brand name" autocomplete="off">
-              </div>
-              <div class="form-group">
-                <label for="f-category">Category <span class="required">*</span></label>
-                <select id="f-category" required>
-                  <option value="">Select category</option>
-                  <option value="baseball_caps">Baseball Caps</option>
-                  <option value="home_kitchen">Home &amp; Kitchen</option>
-                </select>
-                <span class="form-error" id="err-category"></span>
-              </div>
-              <div class="form-group">
-                <label for="f-subcategory">Subcategory</label>
-                <input type="text" id="f-subcategory" placeholder="e.g., Snapback, Cotton Cap" autocomplete="off">
-              </div>
-            </div>
-          </div>
-
-          <!-- Section: Costing & Dimensions -->
-          <div class="form-section">
-            <h4 class="form-section-title">Costing &amp; Dimensions</h4>
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="f-cost">Cost Price (₹) <span class="required">*</span></label>
-                <input type="number" id="f-cost" step="0.01" required placeholder="0.00" min="0">
-                <span class="form-error" id="err-cost"></span>
-              </div>
-              <div class="form-group">
-                <label for="f-weight">Weight (grams)</label>
-                <input type="number" id="f-weight" placeholder="e.g., 150" min="0">
-              </div>
-              <div class="form-group">
-                <label for="f-length">Length (cm)</label>
-                <input type="number" id="f-length" step="0.1" placeholder="0.0" min="0">
-              </div>
-              <div class="form-group">
-                <label for="f-width">Width (cm)</label>
-                <input type="number" id="f-width" step="0.1" placeholder="0.0" min="0">
-              </div>
-              <div class="form-group">
-                <label for="f-height">Height (cm)</label>
-                <input type="number" id="f-height" step="0.1" placeholder="0.0" min="0">
-              </div>
-              <div class="form-group">
-                <label for="f-hsn">HSN Code</label>
-                <input type="text" id="f-hsn" placeholder="e.g., 65050090" autocomplete="off">
-              </div>
-              <div class="form-group">
-                <label for="f-gst">GST Rate (%)</label>
-                <input type="number" id="f-gst" value="18" step="0.1" min="0" max="100">
-              </div>
-            </div>
-          </div>
-
-          <!-- Section: Notes -->
-          <div class="form-section">
-            <h4 class="form-section-title">Notes</h4>
-            <div class="form-group full-width">
-              <textarea id="f-notes" rows="3" placeholder="Any additional notes about this product..."></textarea>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveProduct()">
-          <span id="modal-save-label">Save Product</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- ========== Product Wizard Modal (5 steps) ========== -->
   <div class="modal-overlay" id="wizard-modal">
     <div class="modal" style="max-width: 900px; max-height: 90vh;">
@@ -332,9 +233,10 @@
 
         <!-- Step 3: Side-by-Side Content Generation -->
         <div class="wizard-step-content" id="wcontent-3">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 class="form-section-title" style="margin-bottom: 0;">Marketplace AI Copy Generator</h4>
-            <button class="btn btn-primary btn-sm" onclick="startWizardContentGeneration()">✨ Generate AI Copies</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 16px;">
+            <h4 class="form-section-title" style="margin-bottom: 0; flex-shrink: 0;">Marketplace AI Copy Generator</h4>
+            <div id="w-variation-tabs" class="wizard-variation-tabs" style="flex: 1; margin: 0 16px;"></div>
+            <button class="btn btn-primary btn-sm" style="flex-shrink: 0;" onclick="startWizardContentGeneration()">✨ Generate AI Copies</button>
           </div>
           <div class="editor-marketplace-columns">
             <!-- Amazon Column -->

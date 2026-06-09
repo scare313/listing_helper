@@ -660,7 +660,7 @@ Row action buttons: 32×32px glass squares, danger variant on delete hover.
 |-------|-------------|---------------|-------------|
 | [DONE] 1 — App Shell | Trim sidebar to 3 items, delete 4 page renderers | html, app.js, styles.css | 2 hr |
 | [DONE] 2 — Dashboard | Add Listed column, remove table/quick-actions | app.js, styles.css | 1 hr |
-| 3 — Products | Sync filters with real data model, route to wizard | app.js, index.html | 1 hr |
+| [DONE] 3 — Products | Sync filters with real data model, route to wizard | app.js, index.html | 1 hr |
 | 4 — Wizard | Auto-trigger Step 2, variation tabs, slider, labels | index.html, app.js, styles.css | 3 hr |
 | 5 — Settings | Show/hide key, save indicator | app.js, styles.css | 0.5 hr |
 | 6 — Cleanup | Remove orphaned CSS, inline style cleanup | app.js, styles.css, index.html | 1 hr |

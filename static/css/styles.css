@@ -1768,12 +1768,49 @@ tbody tr:last-child td {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-top: 16px;
+  overflow-x: auto;
 }
 .editor-marketplace-column {
   background: rgba(19, 24, 66, 0.4);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   padding: 16px;
+  min-width: 240px;
+}
+
+/* Step 3 Variation Tabs */
+.wizard-variation-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+  padding: 2px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.wizard-variation-tabs::-webkit-scrollbar {
+  display: none; /* Hide scrollbar in Chrome, Safari, Opera */
+}
+.wizard-var-tab {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.wizard-var-tab:hover {
+  border-color: var(--border-glass-hover);
+  color: var(--text-primary);
+}
+.wizard-var-tab.active {
+  background: var(--accent-primary-glow);
+  border-color: var(--accent-primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
 }
 .editor-column-header {
   font-size: 14px;

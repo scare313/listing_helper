@@ -16,7 +16,7 @@ Endpoints:
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, Any
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -30,6 +30,8 @@ from database import (
     get_product,
     get_variations,
     update_product,
+    get_all_variation_content_for_product,
+    save_variation_content,
 )
 from models import (
     ApiResponse,
@@ -283,3 +285,42 @@ async def remove_variation(product_id: int, variation_id: int):
 
     logger.info("Deleted variation id=%d from product id=%d", variation_id, product_id)
     return ApiResponse(message="Variation deleted successfully")
+
+
+@router.get("/{product_id}/variation-content", response_model=ApiResponse)
+async def get_product_variation_content(product_id: int):
+    """Get all variation content for a product, grouped by variation ID and marketplace."""
+    product = await get_product(product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail=f"Product {product_id} not found")
+
+    content = await get_all_variation_content_for_product(product_id)
+    return ApiResponse(data=content)
+
+
+@router.put("/{product_id}/variation-content", response_model=ApiResponse)
+async def update_product_variation_content(product_id: int, body: dict[str, dict[str, Any]]):
+    """Update variation content for multiple variations and marketplaces."""
+    product = await get_product(product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail=f"Product {product_id} not found")
+
+    for var_id_str, marketplaces in body.items():
+        try:
+            var_id = int(var_id_str)
+        except ValueError:
+            continue
+
+        for mp_name, content_data in marketplaces.items():
+            if mp_name not in ("amazon", "flipkart", "meesho"):
+                continue
+            
+            # Ensure bullets is a list if present and it's a string
+            if "bullets" in content_data and isinstance(content_data["bullets"], str):
+                content_data["bullets"] = [
+                    b.strip() for b in content_data["bullets"].split("\n") if b.strip()
+                ]
+
+            await save_variation_content(var_id, mp_name, content_data)
+
+    return ApiResponse(message="Variation content saved successfully")
