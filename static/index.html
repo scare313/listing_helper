@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Listing Helper — Automate product listings for Amazon, Flipkart & Meesho">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Listing Helper — Product Listing Dashboard</title>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Favicon (emoji fallback) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- ========== Sidebar ========== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">📦</span>
+          <h1>Listing Helper</h1>
+          <span class="version-badge">v2.0</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a data-page="dashboard" class="nav-item active" href="#">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a data-page="products" class="nav-item" href="#">
+          <span class="nav-icon">🏷️</span>
+          <span class="nav-label">Products</span>
+        </a>
+        <a data-page="settings" class="nav-item" href="#">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="marketplace-badges">
+          <span class="badge amazon">Amazon</span>
+          <span class="badge flipkart">Flipkart</span>
+          <span class="badge meesho">Meesho</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ========== Main Content ========== -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <button class="hamburger" id="hamburger" aria-label="Toggle sidebar">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="page-title">
+            <h2 id="page-title">Dashboard</h2>
+          </div>
+        </div>
+        <div class="top-bar-actions">
+          <button class="btn btn-primary" id="btn-add-product" onclick="openProductWizard()">
+            <span class="btn-icon">+</span> Add Product
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Content Area -->
+      <div class="content-area" id="content-area">
+        <!-- Pages are rendered here by app.js -->
+      </div>
+    </main>
+  </div>
+
+  <!-- ========== Add / Edit Product Modal ========== -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Add New Product</h3>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="product-form" novalidate>
+          <!-- Section: Basic Info -->
+          <div class="form-section">
+            <h4 class="form-section-title">Basic Information</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="f-sku">SKU <span class="required">*</span></label>
+                <input type="text" id="f-sku" required placeholder="e.g., BC-BLK-001" autocomplete="off">
+                <span class="form-error" id="err-sku"></span>
+              </div>
+              <div class="form-group">
+                <label for="f-name">Product Name <span class="required">*</span></label>
+                <input type="text" id="f-name" required placeholder="e.g., Classic Baseball Cap" autocomplete="off">
+                <span class="form-error" id="err-name"></span>
+              </div>
+              <div class="form-group">
+                <label for="f-brand">Brand</label>
+                <input type="text" id="f-brand" placeholder="Your brand name" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="f-category">Category <span class="required">*</span></label>
+                <select id="f-category" required>
+                  <option value="">Select category</option>
+                  <option value="baseball_caps">Baseball Caps</option>
+                  <option value="home_kitchen">Home &amp; Kitchen</option>
+                </select>
+                <span class="form-error" id="err-category"></span>
+              </div>
+              <div class="form-group">
+                <label for="f-subcategory">Subcategory</label>
+                <input type="text" id="f-subcategory" placeholder="e.g., Snapback, Cotton Cap" autocomplete="off">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Costing & Dimensions -->
+          <div class="form-section">
+            <h4 class="form-section-title">Costing &amp; Dimensions</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="f-cost">Cost Price (₹) <span class="required">*</span></label>
+                <input type="number" id="f-cost" step="0.01" required placeholder="0.00" min="0">
+                <span class="form-error" id="err-cost"></span>
+              </div>
+              <div class="form-group">
+                <label for="f-weight">Weight (grams)</label>
+                <input type="number" id="f-weight" placeholder="e.g., 150" min="0">
+              </div>
+              <div class="form-group">
+                <label for="f-length">Length (cm)</label>
+                <input type="number" id="f-length" step="0.1" placeholder="0.0" min="0">
+              </div>
+              <div class="form-group">
+                <label for="f-width">Width (cm)</label>
+                <input type="number" id="f-width" step="0.1" placeholder="0.0" min="0">
+              </div>
+              <div class="form-group">
+                <label for="f-height">Height (cm)</label>
+                <input type="number" id="f-height" step="0.1" placeholder="0.0" min="0">
+              </div>
+              <div class="form-group">
+                <label for="f-hsn">HSN Code</label>
+                <input type="text" id="f-hsn" placeholder="e.g., 65050090" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="f-gst">GST Rate (%)</label>
+                <input type="number" id="f-gst" value="18" step="0.1" min="0" max="100">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Notes -->
+          <div class="form-section">
+            <h4 class="form-section-title">Notes</h4>
+            <div class="form-group full-width">
+              <textarea id="f-notes" rows="3" placeholder="Any additional notes about this product..."></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveProduct()">
+          <span id="modal-save-label">Save Product</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Product Wizard Modal (5 steps) ========== -->
+  <div class="modal-overlay" id="wizard-modal">
+    <div class="modal" style="max-width: 900px; max-height: 90vh;">
+      <div class="modal-header">
+        <h3 id="wizard-modal-title">Product Onboarding Wizard</h3>
+        <button class="modal-close" onclick="closeWizard()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Step Progress Bar -->
+      <div class="wizard-header">
+        <div class="wizard-steps">
+          <div class="wizard-step active" id="wstep-1" onclick="goToWizardStep(1)">
+            <div class="wizard-step-circle">1</div>
+            <span class="wizard-step-label">Specs</span>
+          </div>
+          <div class="wizard-step" id="wstep-2" onclick="goToWizardStep(2)">
+            <div class="wizard-step-circle">2</div>
+            <span class="wizard-step-label">Keywords</span>
+          </div>
+          <div class="wizard-step" id="wstep-3" onclick="goToWizardStep(3)">
+            <div class="wizard-step-circle">3</div>
+            <span class="wizard-step-label">AI Content</span>
+          </div>
+          <div class="wizard-step" id="wstep-4" onclick="goToWizardStep(4)">
+            <div class="wizard-step-circle">4</div>
+            <span class="wizard-step-label">Pricing</span>
+          </div>
+          <div class="wizard-step" id="wstep-5" onclick="goToWizardStep(5)">
+            <div class="wizard-step-circle">5</div>
+            <span class="wizard-step-label">Export</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-body">
+        <!-- Step 1: Specs & Optional Image Scan -->
+        <div class="wizard-step-content active" id="wcontent-1">
+          <div style="display: grid; grid-template-columns: 300px 1fr; gap: 24px;">
+            <!-- Left panel: Image Scan -->
+            <div style="border-right: 1px solid var(--border-glass); padding-right: 20px;">
+              <h4 class="form-section-title">AI Image Scan (Optional)</h4>
+              <div class="image-upload-zone">
+                <div class="upload-dropzone" id="w-dropzone">
+                  <span class="upload-dropzone-icon">📸</span>
+                  <p>Drag &amp; Drop Product Photo</p>
+                  <span>Supports PNG, JPEG, WebP</span>
+                  <input type="file" id="w-file-input" style="display: none;" accept="image/*">
+                </div>
+                <div id="w-scan-status" style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px;"></div>
+              </div>
+              <div class="detected-attributes-list" id="w-detected-attrs" style="display: none; max-height: 250px; overflow-y: auto;">
+                <!-- Filled dynamically upon success -->
+              </div>
+            </div>
+            <!-- Right panel: Manual Info Form -->
+            <div>
+              <h4 class="form-section-title">Manual Details</h4>
+              <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                  <label for="w-sku">SKU *</label>
+                  <input type="text" id="w-sku" placeholder="e.g. BC-BLK-001">
+                </div>
+                <div class="form-group">
+                  <label for="w-name">Product Name *</label>
+                  <input type="text" id="w-name" placeholder="e.g. Cotton Cap">
+                </div>
+                <div class="form-group">
+                  <label for="w-brand">Brand</label>
+                  <input type="text" id="w-brand" placeholder="Default Brand">
+                </div>
+                <div class="form-group">
+                  <label for="w-category">Category *</label>
+                  <select id="w-category">
+                    <option value="">Select category</option>
+                    <option value="baseball_caps">Baseball Caps</option>
+                    <option value="home_kitchen_general">Home &amp; Kitchen General</option>
+                    <option value="kitchen_storage">Kitchen Storage</option>
+                    <option value="kitchen_tools">Kitchen Tools</option>
+                    <option value="home_decor">Home Decor</option>
+                    <option value="cleaning_supplies">Cleaning Supplies</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="w-subcategory">Subcategory</label>
+                  <input type="text" id="w-subcategory" placeholder="Snapback, Organiser...">
+                </div>
+                <div class="form-group">
+                  <label for="w-cost">Cost Price (₹) *</label>
+                  <input type="number" id="w-cost" placeholder="0.00" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="w-weight">Weight (grams)</label>
+                  <input type="number" id="w-weight" placeholder="150" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="w-hsn">HSN Code</label>
+                  <input type="text" id="w-hsn" placeholder="65050090">
+                </div>
+              </div>
+
+              <!-- Variations -->
+              <div class="wizard-variations-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <h4 class="form-section-title" style="margin-bottom:0;">Variations <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(Optional)</span></h4>
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="addWizardVariation()">＋ Add Variation</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Add color, size, or material variants. Each variation gets its own SKU and tailored AI content.</p>
+                <div id="w-variations-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Autocomplete & Competitor Keyword Crawl -->
+        <div class="wizard-step-content" id="wcontent-2">
+          <h4 class="form-section-title">Automated Competitor Keyword Crawling</h4>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+            Crawls Amazon suggestions and top organic competitors to calculate keyword density.
+          </p>
+          <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <input type="text" id="w-keyword-seed" placeholder="Enter search seed keyword OR Amazon best seller page URL..." style="flex: 1; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: #fff;">
+            <button class="btn btn-primary" onclick="startWizardKeywordResearch()">⚡ Start Crawler</button>
+          </div>
+          <!-- Real-time SSE progress -->
+          <div id="w-keyword-progress" style="display: none; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">
+              <span id="w-progress-step">Initializing scraper...</span>
+              <span id="w-progress-percent">0%</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+              <div id="w-progress-bar" style="width: 0%; height: 100%; background: var(--accent-secondary); transition: width 0.3s;"></div>
+            </div>
+            <div id="w-progress-status" style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-family: monospace;"></div>
+          </div>
+          <!-- Discovered keyword pills selection -->
+          <div id="w-keyword-results" style="display: none; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="keyword-group-card">
+              <h4>Primary / Autocomplete Keywords</h4>
+              <div class="pill-container" id="w-pills-primary"></div>
+            </div>
+            <div class="keyword-group-card secondary">
+              <h4>Secondary / Long-tail Keywords</h4>
+              <div class="pill-container" id="w-pills-secondary"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Side-by-Side Content Generation -->
+        <div class="wizard-step-content" id="wcontent-3">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 class="form-section-title" style="margin-bottom: 0;">Marketplace AI Copy Generator</h4>
+            <button class="btn btn-primary btn-sm" onclick="startWizardContentGeneration()">✨ Generate AI Copies</button>
+          </div>
+          <div class="editor-marketplace-columns">
+            <!-- Amazon Column -->
+            <div class="editor-marketplace-column">
+              <div class="editor-column-header" style="color: var(--amazon-color);">🛒 Amazon India</div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>Title</label>
+                <input type="text" id="w-amazon-title" placeholder="Amazon title">
+                <div id="wc-cnt-amazon-title" class="char-counter">0 / 200 chars</div>
+              </div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>Bullet Points (Line breaks separated)</label>
+                <textarea id="w-amazon-bullets" rows="4" placeholder="Bullet 1&#10;Bullet 2&#10;Bullet 3&#10;Bullet 4&#10;Bullet 5"></textarea>
+                <div id="wc-cnt-amazon-bullets" class="char-counter">0 / 500 chars per bullet</div>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="w-amazon-desc" rows="4" placeholder="Amazon description"></textarea>
+                <div id="wc-cnt-amazon-desc" class="char-counter">0 / 2000 chars</div>
+              </div>
+            </div>
+            <!-- Flipkart Column -->
+            <div class="editor-marketplace-column">
+              <div class="editor-column-header" style="color: var(--flipkart-color);">🛍️ Flipkart Hub</div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>Title</label>
+                <input type="text" id="w-flipkart-title" placeholder="Flipkart title">
+                <div id="wc-cnt-flipkart-title" class="char-counter">0 / 500 chars</div>
+              </div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>Key Features (Line breaks separated)</label>
+                <textarea id="w-flipkart-features" rows="4" placeholder="Feature 1&#10;Feature 2&#10;Feature 3&#10;Feature 4&#10;Feature 5"></textarea>
+                <div id="wc-cnt-flipkart-features" class="char-counter">0 / 200 chars per feature</div>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="w-flipkart-desc" rows="4" placeholder="Flipkart description"></textarea>
+                <div id="wc-cnt-flipkart-desc" class="char-counter">0 / 5000 chars</div>
+              </div>
+            </div>
+            <!-- Meesho Column -->
+            <div class="editor-marketplace-column">
+              <div class="editor-column-header" style="color: var(--meesho-color);">🏪 Meesho Supplier</div>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label>Title</label>
+                <input type="text" id="w-meesho-title" placeholder="Meesho title">
+                <div id="wc-cnt-meesho-title" class="char-counter">0 / 200 chars</div>
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="w-meesho-desc" rows="10" placeholder="Meesho description"></textarea>
+                <div id="wc-cnt-meesho-desc" class="char-counter">0 / 2000 chars</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Reverse Pricing Review -->
+        <div class="wizard-step-content" id="wcontent-4">
+          <h4 class="form-section-title">Reverse-Engineered Pricing Calculator</h4>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            Adjust your target margin to recalculate final listing prices based on marketplace-specific commission and shipping slabs.
+          </p>
+          <div style="display: grid; grid-template-columns: 240px 1fr; gap: 24px;">
+            <div style="border-right: 1px solid var(--border-glass); padding-right: 20px; display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-group">
+                <label>Target Profit Margin (%)</label>
+                <input type="number" id="w-pricing-margin" value="25" min="0" max="95" oninput="calculateWizardPricing()">
+              </div>
+              <div class="form-group">
+                <label>Shipping Zone</label>
+                <select id="w-pricing-zone" onchange="calculateWizardPricing()">
+                  <option value="national">National Shipping</option>
+                  <option value="regional">Regional / Zonal</option>
+                  <option value="local">Local Delivery</option>
+                </select>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                * Calculates referral fee, weight handling shipping rates, fixed/closing fees, and adds 18% GST.
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+              <!-- Amazon pricing card -->
+              <div class="card" style="padding: 16px;">
+                <div style="font-weight: 600; color: var(--amazon-color); font-size: 14px; margin-bottom: 8px;">Amazon India</div>
+                <div style="font-size: 24px; font-weight: 700; color: #fff;" id="w-price-val-amazon">₹0.00</div>
+                <div class="pricing-breakdown-card" id="w-price-breakdown-amazon"></div>
+              </div>
+              <!-- Flipkart pricing card -->
+              <div class="card" style="padding: 16px;">
+                <div style="font-weight: 600; color: var(--flipkart-color); font-size: 14px; margin-bottom: 8px;">Flipkart Hub</div>
+                <div style="font-size: 24px; font-weight: 700; color: #fff;" id="w-price-val-flipkart">₹0.00</div>
+                <div class="pricing-breakdown-card" id="w-price-breakdown-flipkart"></div>
+              </div>
+              <!-- Meesho pricing card -->
+              <div class="card" style="padding: 16px;">
+                <div style="font-weight: 600; color: var(--meesho-color); font-size: 14px; margin-bottom: 8px;">Meesho Supplier</div>
+                <div style="font-size: 24px; font-weight: 700; color: #fff;" id="w-price-val-meesho">₹0.00</div>
+                <div class="pricing-breakdown-card" id="w-price-breakdown-meesho"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Export Preview & Save -->
+        <div class="wizard-step-content" id="wcontent-5">
+          <h4 class="form-section-title">Bulk Export Sheet Table Preview</h4>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+            Verify the structured data formats of the generated listings before final download.
+          </p>
+
+          <!-- Marketplace filter tabs -->
+          <div class="preview-tab-strip">
+            <button id="w-ptab-all"      class="preview-tab active"                                    onclick="switchPreviewTab('all')">All</button>
+            <button id="w-ptab-amazon"   class="preview-tab" style="color:var(--amazon-color);"        onclick="switchPreviewTab('amazon')">Amazon</button>
+            <button id="w-ptab-flipkart" class="preview-tab" style="color:var(--flipkart-color);"      onclick="switchPreviewTab('flipkart')">Flipkart</button>
+            <button id="w-ptab-meesho"   class="preview-tab" style="color:var(--meesho-color);"        onclick="switchPreviewTab('meesho')">Meesho</button>
+          </div>
+
+          <div class="export-preview-table-container">
+            <table id="w-preview-table">
+              <thead>
+                <!-- Populated dynamically -->
+              </thead>
+              <tbody>
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mark as Published -->
+          <div class="mark-published-section">
+            <h5 class="form-section-title" style="margin-bottom: 4px;">Mark as Published</h5>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Check each marketplace where you have uploaded and published this listing.</p>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+              <label class="checkbox-label" style="color: var(--amazon-color);">
+                <input type="checkbox" id="w-listed-amazon"> Listed on Amazon India
+              </label>
+              <label class="checkbox-label" style="color: var(--flipkart-color);">
+                <input type="checkbox" id="w-listed-flipkart"> Listed on Flipkart
+              </label>
+              <label class="checkbox-label" style="color: var(--meesho-color);">
+                <input type="checkbox" id="w-listed-meesho"> Listed on Meesho
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="w-btn-prev" onclick="prevWizardStep()">Back</button>
+        <button class="btn btn-primary" id="w-btn-next" onclick="nextWizardStep()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Delete Confirmation Modal ========== -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3>Confirm Deletion</h3>
+        <button class="modal-close" onclick="closeDeleteModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-confirm-content">
+          <span class="delete-icon">🗑️</span>
+          <p>Are you sure you want to delete <strong id="delete-product-name"></strong>?</p>
+          <p class="text-muted">This action cannot be undone.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn btn-danger" id="btn-confirm-delete">Delete Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Toast Notification Container ========== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- App JS -->
+  <script src="/static/js/app.js?v=2.0"></script>
+</body>
+</html>
